@@ -1,25 +1,51 @@
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using TrailerParkApp.Models;
 
 namespace TrailerParkApp.Services
 {
-    public class TrailerService
+    // Simple in-memory store for early development / UI wiring
+    public class TrailerService : ITrailerService
     {
-        private readonly List<Trailer> _trailers = new();
+        private readonly ConcurrentDictionary<Guid, Trailer> _store = new();
 
-        public void AddTrailer(Trailer trailer)
+        public TrailerService()
         {
-            _trailers.Add(trailer);
+            // seed example
+            var t = new Trailer { Name = "Demo Trailer", VIN = "VIN123456" };
+            _store[t.Id] = t;
         }
 
-        public IEnumerable<Trailer> GetAllTrailers()
+        public Task AddAsync(Trailer trailer)
         {
-            return _trailers;
+            _store[trailer.Id] = trailer;
+            return Task.CompletedTask;
         }
 
-        public Trailer? GetTrailerByLot(int lotNumber)
+        public Task DeleteAsync(Guid id)
         {
-            return _trailers.Find(t => t.LotNumber == lotNumber);
+            _store.TryRemove(id, out _);
+            return Task.CompletedTask;
+        }
+
+        public Task<IEnumerable<Trailer>> GetAllAsync()
+        {
+            return Task.FromResult(_store.Values.AsEnumerable());
+        }
+
+        public Task<Trailer?> GetByIdAsync(Guid id)
+        {
+            _store.TryGetValue(id, out var trailer);
+            return Task.FromResult(trailer);
+        }
+
+        public Task UpdateAsync(Trailer trailer)
+        {
+            _store[trailer.Id] = trailer;
+            return Task.CompletedTask;
         }
     }
 }
